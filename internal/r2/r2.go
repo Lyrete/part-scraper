@@ -13,6 +13,7 @@ type Item struct {
 	name          string
 	price         string
 	vatPercentage int
+	EAN           string
 }
 
 func GetPriceFromPage(page *rod.Page) string {
@@ -47,10 +48,7 @@ func GetEanFromPage(page *rod.Page) string {
 	return eanNumber
 }
 
-func SearchItemByName(itemName string) Item {
-
-	browser := rod.New().MustConnect()
-	defer browser.MustClose()
+func SearchItemByName(browser *rod.Browser, itemName string) Item {
 
 	fmt.Println("Built browser, connecting to r2-bike.com")
 	page := browser.MustPage("https://www.r2-bike.com/").MustWaitStable()
@@ -58,17 +56,13 @@ func SearchItemByName(itemName string) Item {
 	fmt.Println("Searching for " + itemName)
 	page.MustElement("input[name='qs']").MustInput(itemName).MustType(input.Enter)
 
-	fmt.Println("Opening first search result")
 	page.MustElement("#product-list").MustElement(".image-wrapper").MustClick()
 
-	fmt.Println("Grabbing price")
-	item_price := getPriceFromPage(page)
-	vatPercentage := getVatFromPage(page)
+	item_price := GetPriceFromPage(page)
+	vatPercentage := GetVatFromPage(page)
 
-	fmt.Println("Grabbing EAN")
-	eanNumber := getEanFromPage(page)
-	fmt.Println("EAN: " + eanNumber)
+	eanNumber := GetEanFromPage(page)
 
-	return Item{name: itemName, price: item_price, vatPercentage: vatPercentage}
+	return Item{name: itemName, price: item_price, vatPercentage: vatPercentage, EAN: eanNumber}
 
 }
