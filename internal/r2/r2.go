@@ -7,20 +7,33 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/input"
+	"github.com/lyrete/part-scraper/internal/bdiscount"
 )
 
 type Item struct {
-	name          string
-	price         string
-	vatPercentage int
-	EAN           string
+	name  string
+	price float64
+	EAN   string
 }
 
-func GetPriceFromPage(page *rod.Page) string {
-	price_wrapper := page.MustElement("#product-offer > div.product-info.col-xs-12.col-sm-6.col-lg-6 > div > div.product-offer > div.row > div > div")
+func GetPriceFromPage(page *rod.Page, vat int) float64 {
+	price_wrapper := page.MustElement("#product-offer > div.product-info.col-xs-12.col-sm-6.col-lg-6 > div > div.product-offer > div.row > div > div") //TODO: Replace this selector, it's probably 100% gonna break at some point when they add like a random deal
 	itemPriceElement := price_wrapper.MustElement("strong")
 
-	return itemPriceElement.MustElementR("span", "€").MustText()
+	itemPrice := itemPriceElement.MustElementR("span", "€").MustText()
+	itemPrice = strings.Replace(itemPrice, " €", "", 1)
+	itemPrice = strings.Replace(itemPrice, ",", ".", 1)
+
+	itemPriceFloat, err := strconv.ParseFloat(itemPrice, 64)
+
+	if err != nil {
+		panic(err)
+	}
+
+	itemPriceVatFree := itemPriceFloat / (1 + (float64(vat) / 100))
+	itemPriceVatFree = bdiscount.RoundFloat(itemPriceVatFree, 2)
+
+	return itemPriceVatFree
 }
 
 func GetVatFromPage(page *rod.Page) int {
@@ -34,7 +47,7 @@ func GetVatFromPage(page *rod.Page) int {
 	vatPercentageInt, err := strconv.Atoi(vatPercentage)
 
 	if err != nil {
-		panic(err)
+		panic(err) //TODO: Actually handle the error, (probably before this make sure it is a number or try to search for it elsewhere otherwise)
 	}
 
 	return vatPercentageInt
@@ -48,21 +61,28 @@ func GetEanFromPage(page *rod.Page) string {
 	return eanNumber
 }
 
-func SearchItemByName(browser *rod.Browser, itemName string) Item {
-
-	fmt.Println("Built browser, connecting to r2-bike.com")
-	page := browser.MustPage("https://www.r2-bike.com/").MustWaitStable()
-
+func SearchItemByName(page *rod.Page, itemName string) Item {
 	fmt.Println("Searching for " + itemName)
+
+	wait := page.MustWaitRequestIdle()
 	page.MustElement("input[name='qs']").MustInput(itemName).MustType(input.Enter)
+	wait()
 
 	page.MustElement("#product-list").MustElement(".image-wrapper").MustClick()
 
-	item_price := GetPriceFromPage(page)
 	vatPercentage := GetVatFromPage(page)
+
+	item_price := GetPriceFromPage(page, vatPercentage)
 
 	eanNumber := GetEanFromPage(page)
 
-	return Item{name: itemName, price: item_price, vatPercentage: vatPercentage, EAN: eanNumber}
+	return Item{name: itemName, price: item_price, EAN: eanNumber}
 
+}
+
+func Connect(browser *rod.Browser) *rod.Page {
+	fmt.Println("Connecting to r2-bike.com")
+	page := browser.MustPage("https://www.r2-bike.com/").MustWaitStable()
+
+	return page
 }
