@@ -11,8 +11,9 @@ import (
 )
 
 type Item struct {
-	name  string
-	price float64
+	name    string
+	price   float64
+	barcode string
 }
 
 func RoundFloat(val float64, precision uint) float64 {
@@ -25,6 +26,8 @@ func GetPriceFromPage(page *rod.Page, vat int) float64 {
 	fmt.Println(itemPrice)
 
 	itemPrice = strings.Replace(itemPrice, "€", "", 1)
+	itemPrice = strings.Replace(itemPrice, ",", ".", 1)
+	itemPrice = strings.Trim(itemPrice, " ")
 
 	itemPriceFloat, err := strconv.ParseFloat(itemPrice, 64)
 
@@ -33,7 +36,7 @@ func GetPriceFromPage(page *rod.Page, vat int) float64 {
 	}
 
 	itemPriceVatFree := itemPriceFloat / (1 + (float64(vat) / 100))
-	itemPriceVatFree = RoundFloat(itemPriceVatFree, 2)
+	itemPriceVatFree = RoundFloat(itemPriceVatFree, 4)
 
 	return itemPriceVatFree
 }
@@ -62,21 +65,57 @@ func GetVatFromPage(page *rod.Page) int {
 	return vatPercentageInt
 }
 
-func SearchItemByName(page *rod.Page, itemName string) Item {
+func getBarcodeFromPage(page *rod.Page) string {
+	fmt.Println("Getting Bike-Discount barcode")
+	barcodeElement := page.MustElements(".netz-ean, .netz-upc").First()
+	if barcodeElement == nil {
+		return "NOT_FOUND"
+	}
+	return barcodeElement.MustText()
 
-	fmt.Println("Searching for " + itemName + " on Bike-Discount")
+}
+
+func isBarcode(searchTerm string) bool {
+	_, err := strconv.Atoi(searchTerm)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func getFullName(page *rod.Page) string {
+	return page.MustElement("h1.product--title").MustText()
+}
+
+func SearchForItem(page *rod.Page, searchTerm string) Item {
+
+	fmt.Println("Searching for " + searchTerm + " on Bike-Discount")
 
 	wait := page.MustWaitRequestIdle()
-	page.MustElement("input[name='sSearch']").MustInput(itemName).MustType(input.Enter)
+	page.MustElement("input[name='sSearch']").MustInput(searchTerm).MustType(input.Enter)
 	wait()
 
 	page.MustElement(".search--results").MustElement(".product--image").MustClick()
+
+	fullName := getFullName(page)
+
+	if page.MustHas(".custom-variants--select--box") {
+		page.MustElement(".custom-variants--select--box").MustClick()
+		if isBarcode(searchTerm) {
+			selector := "input[ean*=\"" + searchTerm + "\"]"
+			variant := page.MustElement(".product--configurator").MustElement(selector)
+			variant.MustClick()
+
+		} else {
+			page.MustElement(".product--configurator").MustElement(".variant--option").MustClick()
+		}
+	}
 
 	vatPercentage := GetVatFromPage(page)
 
 	item_price := GetPriceFromPage(page, vatPercentage)
 
-	return Item{name: itemName, price: item_price}
+	return Item{name: fullName, price: item_price, barcode: getBarcodeFromPage(page)}
 
 }
 

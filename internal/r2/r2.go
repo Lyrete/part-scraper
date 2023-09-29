@@ -61,7 +61,7 @@ func GetEanFromPage(page *rod.Page) string {
 	return eanNumber
 }
 
-func SearchItemByName(page *rod.Page, itemName string) Item {
+func SearchForItem(page *rod.Page, itemName string) Item {
 	fmt.Println("Searching for " + itemName)
 
 	wait := page.MustWaitRequestIdle()
