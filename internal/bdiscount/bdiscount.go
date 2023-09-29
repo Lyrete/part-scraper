@@ -25,7 +25,6 @@ func RoundFloat(val float64, precision uint) float64 {
 
 func GetPriceFromPage(page *rod.Page, vat int) float64 {
 	itemPrice := page.MustElementR("#netz-price", "€").MustText()
-	fmt.Println(itemPrice)
 
 	itemPrice = strings.Replace(itemPrice, "€", "", 1)
 	itemPrice = strings.Replace(itemPrice, ",", ".", 1)
@@ -44,7 +43,6 @@ func GetPriceFromPage(page *rod.Page, vat int) float64 {
 }
 
 func GetVatFromPage(page *rod.Page) int {
-	fmt.Println("Getting Bike-Discount VAT")
 	vatElement, err := page.Element(".product--tax")
 
 	if err != nil {
@@ -68,7 +66,6 @@ func GetVatFromPage(page *rod.Page) int {
 }
 
 func getBarcodeFromPage(page *rod.Page) string {
-	fmt.Println("Getting Bike-Discount barcode")
 	barcodeElement := page.MustElements(".netz-ean, .netz-upc").First()
 	if barcodeElement == nil {
 		return "NOT_FOUND"

@@ -66,7 +66,7 @@ func getFullName(page *rod.Page) string {
 }
 
 func SearchForItem(page *rod.Page, itemName string) Item {
-	fmt.Println("Searching for " + itemName)
+	fmt.Println("Searching for " + itemName + " on R2")
 
 	wait := page.MustWaitRequestIdle()
 	page.MustElement("input[name='qs']").MustInput(itemName).MustType(input.Enter)
