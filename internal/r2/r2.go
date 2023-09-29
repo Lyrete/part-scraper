@@ -19,10 +19,8 @@ type Item struct {
 }
 
 func GetPriceFromPage(page *rod.Page, vat int) float64 {
-	price_wrapper := page.MustElement("#product-offer > div.product-info.col-xs-12.col-sm-6.col-lg-6 > div > div.product-offer > div.row > div > div") //TODO: Replace this selector, it's probably 100% gonna break at some point when they add like a random deal
-	itemPriceElement := price_wrapper.MustElement("strong")
-
-	itemPrice := itemPriceElement.MustElementR("span", "€").MustText()
+	price_wrapper := page.MustElement(".price_wrapper")
+	itemPrice := price_wrapper.MustElementR("span", "€").MustText()
 	itemPrice = strings.Replace(itemPrice, " €", "", 1)
 	itemPrice = strings.Replace(itemPrice, ",", ".", 1)
 
@@ -63,6 +61,10 @@ func GetEanFromPage(page *rod.Page) string {
 	return eanNumber
 }
 
+func getFullName(page *rod.Page) string {
+	return page.MustElement("h1.product-title").MustText()
+}
+
 func SearchForItem(page *rod.Page, itemName string) Item {
 	fmt.Println("Searching for " + itemName)
 
@@ -74,11 +76,11 @@ func SearchForItem(page *rod.Page, itemName string) Item {
 
 	vatPercentage := GetVatFromPage(page)
 
-	item_price := GetPriceFromPage(page, vatPercentage)
+	itemPrice := GetPriceFromPage(page, vatPercentage)
 
 	eanNumber := GetEanFromPage(page)
 
-	return Item{name: itemName, price: item_price, barcode: eanNumber, URL: utils.GetUrl(page)}
+	return Item{name: getFullName(page), price: itemPrice, barcode: eanNumber, URL: utils.GetUrl(page)}
 
 }
 
