@@ -7,13 +7,15 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/input"
+	utils "github.com/lyrete/part-scraper/internal"
 	"github.com/lyrete/part-scraper/internal/bdiscount"
 )
 
 type Item struct {
-	name  string
-	price float64
-	EAN   string
+	name    string
+	price   float64
+	barcode string
+	URL     string
 }
 
 func GetPriceFromPage(page *rod.Page, vat int) float64 {
@@ -76,7 +78,7 @@ func SearchForItem(page *rod.Page, itemName string) Item {
 
 	eanNumber := GetEanFromPage(page)
 
-	return Item{name: itemName, price: item_price, EAN: eanNumber}
+	return Item{name: itemName, price: item_price, barcode: eanNumber, URL: utils.GetUrl(page)}
 
 }
 

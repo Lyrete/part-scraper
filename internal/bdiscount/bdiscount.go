@@ -8,12 +8,14 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/input"
+	utils "github.com/lyrete/part-scraper/internal"
 )
 
 type Item struct {
 	name    string
 	price   float64
 	barcode string
+	URL     string
 }
 
 func RoundFloat(val float64, precision uint) float64 {
@@ -72,7 +74,6 @@ func getBarcodeFromPage(page *rod.Page) string {
 		return "NOT_FOUND"
 	}
 	return barcodeElement.MustText()
-
 }
 
 func isBarcode(searchTerm string) bool {
@@ -115,7 +116,7 @@ func SearchForItem(page *rod.Page, searchTerm string) Item {
 
 	item_price := GetPriceFromPage(page, vatPercentage)
 
-	return Item{name: fullName, price: item_price, barcode: getBarcodeFromPage(page)}
+	return Item{name: fullName, price: item_price, barcode: getBarcodeFromPage(page), URL: utils.GetUrl(page)}
 
 }
 
